@@ -118,8 +118,10 @@ function vFinish(d, s) {
 
 function commitSession() {
   const d = S.get().draft; const s = S.findSession(d.sessionId);
-  const entries = d.entries.filter(e => !e.skipped && e.sets.some(x => x.done || x.weight !== '' || x.reps !== ''))
-    .map(e => ({ exerciseId: e.exerciseId, name: e.name, type: e.type, sets: e.sets.map(x => ({ weight: num(x.weight), reps: num(x.reps), done: x.done })) }));
+  // Et sett teller som gjort hvis det er avhuket ELLER har reps > 0. Eksplisitt 0 og 0 = ikke gjort.
+  const isDone = (x) => { const w = num(x.weight), r = num(x.reps); if (w === 0 && r === 0) return false; return x.done || r > 0; };
+  const entries = d.entries.filter(e => !e.skipped && e.sets.some(isDone))
+    .map(e => ({ exerciseId: e.exerciseId, name: e.name, type: e.type, sets: e.sets.map(x => ({ weight: num(x.weight), reps: num(x.reps), done: isDone(x) })) }));
   S.get().logs.push({ id: S.uid('l'), date: d.date, sessionId: d.sessionId, sessionName: s?.name, minutes: Math.round((Date.now() - d.startedAt) / 60000), notes: d.notes || '', entries });
   S.get().draft = null; S.save();
 }
