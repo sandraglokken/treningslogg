@@ -108,10 +108,14 @@ function vWarmup(d, s) {
   <button class="primary big" data-act="next">Start første øvelse →</button>`;
 }
 
+// Et sett teller som gjort hvis det er avhuket ELLER har reps > 0. Eksplisitt 0 og 0 = ikke gjort.
+const isDone = (x) => { const w = num(x.weight), r = num(x.reps); if (w === 0 && r === 0) return false; return x.done || r > 0; };
+
 function vFinish(d, s) {
-  const done = d.entries.filter(e => e.sets.some(x => x.done)).length;
+  const done = d.entries.filter(e => !e.skipped && e.sets.some(isDone)).length;
   const mins = Math.round((Date.now() - d.startedAt) / 60000);
   return `<h1>Ferdig! 💪</h1><div class="card"><div>${done} av ${d.entries.length} øvelser logget</div><div class="muted">Tid: ${mins} min</div></div>
+  ${done === 0 ? '<div class="hint" style="background:#3a2a10;color:#f0b34a">Ingen sett er registrert. Gå «Tilbake», fyll inn vekt og reps og trykk ✓ på hvert sett du gjorde.</div>' : ''}
   <label>Notat (valgfritt, f.eks. kneet)</label><textarea id="notes" rows="3">${esc(d.notes || '')}</textarea>
   <div class="nav"><button data-act="prev">← Tilbake</button><button class="primary" data-act="save">Lagre i logg</button></div>`;
 }
@@ -119,7 +123,6 @@ function vFinish(d, s) {
 function commitSession() {
   const d = S.get().draft; const s = S.findSession(d.sessionId);
   // Et sett teller som gjort hvis det er avhuket ELLER har reps > 0. Eksplisitt 0 og 0 = ikke gjort.
-  const isDone = (x) => { const w = num(x.weight), r = num(x.reps); if (w === 0 && r === 0) return false; return x.done || r > 0; };
   const entries = d.entries.filter(e => !e.skipped && e.sets.some(isDone))
     .map(e => ({ exerciseId: e.exerciseId, name: e.name, type: e.type, sets: e.sets.map(x => ({ weight: num(x.weight), reps: num(x.reps), done: isDone(x) })) }));
   S.get().logs.push({ id: S.uid('l'), date: d.date, sessionId: d.sessionId, sessionName: s?.name, minutes: Math.round((Date.now() - d.startedAt) / 60000), notes: d.notes || '', entries });
